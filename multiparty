@@ -1,0 +1,378 @@
+metadata:
+  title: |
+    SMU Pro Bono Mediation Clinic Application Form
+  short title: |
+    Pro Bono Mediation Application
+  description: |
+    This interview provides assists applicants and responding parties in completing their application form in an expedient and comprehensive manner. It also seeks to streamline and better automate the workflow at the SMU Pro Bono Centre. 
+  authors:
+    - name: Group 13
+      organization: COR-LAW-2215 Digital Intelligence for Lawyers
+  revision_date: 2020-11-01
+  require login: True
+  allow anonymous access: False
+---
+objects:
+  - firstparty: Individual
+  - secondparty: Individual
+  - respondent: Individual
+---
+initial: True
+code: |
+  multi_user = True
+  if user_logged_in():
+    if not defined('firstparty.email'):
+      firstparty.email = user_info().email
+    if user_info().email == firstparty.email:
+      firstparty.endpoint      
+    elif user_info().email == respondent_email_address:
+      secondparty.endpoint
+    else:
+      user_kicked_out
+  else:
+    user_must_log_in
+---
+mandatory: True
+event: firstparty.endpoint
+code: |
+  firstparty_declaration_page
+  firstparty_individual_or_company
+  respondent.party_name
+  firstparty_monetary_claim_or_not
+  firstparty_agreement_to_mediate
+  firstparty_any_prior_mediation_or_negotiation
+  firstparty.signature
+  if defined("firstparty.signature"):
+    firstparty_download_screen
+---
+mandatory: True
+event: secondparty.endpoint
+code: |
+  if not user_logged_in():
+    command('leave', url=url_of('login', next=interview_url()))
+  secondparty_declaration_page
+  secondparty_individual_or_company
+  secondparty_monetary_claim_or_not
+  secondparty_agreement_to_mediate
+  secondparty_any_prior_mediation_or_negotiation
+  secondparty.signature
+  if defined("secondparty.signature"):
+    secondparty_download_screen
+---
+field: firstparty_declaration_page
+question: 
+  Terms and Conditions
+subquestion: |
+  Please complete this guided interview to apply for mediation services under SMU Pro Bono Centre.
+  
+  By proceeding with this interview, you declare that the particulars in this interview are true and remain unchanged to date. 
+  
+  You will hereby consent to the collection, usage and disclosure of your personal data indicated in this form to be used by SMU Pro Bono Centre.
+fields:
+  - no label: agrees_to_tos
+    datatype: checkboxes
+    minlength: 1
+    choices:
+      - I agree to the terms of service
+    validation messages:
+      minlength: |
+        You cannot continue unless you check this checkbox.
+---
+mandatory: True
+need: agrees_to_tos
+question: All done
+---
+section: Applicant Details
+question: |
+  Please enter your personal details below.
+fields: 
+  - "Name": firstparty.name
+    required: True
+  - "Salutation": firstparty_salutation
+    choices:
+      - Mr
+      - Mrs
+      - Mdm
+      - Miss
+      - Dr
+  - "Your NRIC": firstparty_nric
+  - "Are you applying as an individual or a company?": firstparty_individual_or_company
+    input type: radio
+    choices:
+      - "Individual": True
+      - "Company": False
+  - "What is the name of your company?": firstparty_company_name
+    show if:
+      variable: firstparty_individual_or_company
+      is: False
+  - "What is your position in the company?": firstparty_company_appointment
+    show if:
+      variable: firstparty_individual_or_company
+      is: False
+  - "Nationality": firstparty_nationality
+    choices:
+      - Singapore Citizen
+      - Singapore Permanent Resident
+      - Non-Singaporean Citizen
+    default: Singapore Citizen
+    show if:
+      variable: firstparty_individual_or_company
+      is: True
+  - "Mailing Address": firstparty.address.address
+    address autocomplete: True
+  - "Email Address": firstparty_email_address
+    datatype: email
+    default: ${ firstparty.email }
+  - "Contact Number": firstparty_contact_number
+  - "Gross Monthly Income": firstparty_gross_monthly_income
+    show if:
+      variable: firstparty_individual_or_company
+      is: True
+    datatype: currency
+---
+section: Responding Party Details
+question: |
+  Please fill in details of the dispute.
+fields: 
+  - "What is the name of the responding party?": respondent.party_name
+  - "Responding Party's contact number": respondent.phone_number
+  - "Responding Party's e-mail address": respondent_email_address
+    datatype: email
+  - "Country": respondent.country
+    code: |
+      countries_list()
+    default: Singapore
+---
+section: Dispute Details
+question: |
+  Please fill in details of the dispute.
+fields:
+  - "Are you seeking to make a monetary claim from ${ respondent.party_name }?": firstparty_monetary_claim_or_not
+    datatype: yesnoradio
+  - "What is the monetary value of the claim?": firstparty_monetary_claim_value
+    datatype: currency
+    show if:
+      variable: firstparty_monetary_claim_or_not
+      is: True
+  - "Type of dispute": firstparty_type_of_dispute
+    choices:
+      - "Personal Injury"
+      - "Defamation"
+      - "Family/Neighbour Disputes"
+      - "Tenancy Disputes"
+      - "Customer & Businesses Disputes"
+      - "Business Partners Disputes"
+      - "Disputes on Campus"
+      - "Others"
+  - "If you filled in **Others** for the type of dispute, please indicate the type of dispute": firstparty_other_types_of_disputes
+    show if:
+      variable: firstparty_type_of_dispute
+      is: Others
+---
+question: |
+    Please fill in details of the dispute.
+fields:
+  - "Have all the parties agreed to mediate this matter?": firstparty_agreement_to_mediate
+    datatype: yesnoradio
+  - "What languages do you prefer to have mediation conducted in?": firstparty_preferred_language
+    choices: 
+      - "English"
+      - "Mandarin"
+      - "Melayu"
+      - "Hindi"
+      - "Tamil"
+    default: "English"
+---
+section: Dispute Details
+question: |
+  Please fill in details of the dispute.
+fields: 
+  - "Briefly describe what happened between you and ${ respondent.party_name }": firstparty_brief_description
+    input type: area
+  - "What do you want from ${ respondent.party_name }": firstparty_relief_sought
+    input type: area
+  - "Was there any prior negotiation or mediation on the same dispute or related matter in the dispute?": firstparty_any_prior_mediation_or_negotiation
+    datatype: yesnoradio
+  - "Briefly describe what is the outcome of the previous mediation or negotiation?": firstparty_outcome_of_previous_mediation
+    input type: area
+    show if:
+      variable: firstparty_any_prior_mediation_or_negotiation
+      is: True
+    help: |
+      Was there any partial settlement, or no agreement was reached between parties? Were there any offers and proposals made, and why they were not agreed on?
+  - "What are the biggest issues that prevent you and ${ respondent.party_name } from settling the dispute?": firstparty_biggest_issues
+    input type: area
+    hint: |
+      Example: ${ respondent.party_name } and I cannot agree with each other because we would get angry and irrational.
+---
+event: firstparty_signature_page
+question: |
+  Dear ${ firstparty.name }, please sign your name below.
+signature: firstparty.signature
+under: |
+  ${ firstparty }  
+---
+question: |
+  Thank you for completing the interview.
+subquestion: | 
+  Your application form has been generated. Please follow the instructions below:
+  
+  (1) Download your form below and e-mail it to SMU Pro Bono Centre via smupbcmediation@gmail.com.
+  
+  (2) Please ask ${ respondent.party_name } to go to this link ${ interview_url() } and register with the e-mail address ${ respondent_email_address }. If you have entered ${ respondent.party_name }'s phone number, please click the button below to send a SMS to notify them.
+event: firstparty_download_screen
+---
+event: user_must_log_in
+question: |
+  In order to use this SMU PBC interview, you need to log in.
+subquestion: |
+  If you have not yet created an account, press register.
+buttons:
+  Register: register
+  Log in: signin
+prevent going back: True
+---
+event: user_kicked_out
+question: |
+  You are not authorised. Please create a new account to start a new
+subquestion: |
+  Please create a new account to start a new interview.
+---
+field: secondparty_declaration_page
+question: 
+  Terms and Conditions
+subquestion: |
+  Please complete this guided interview to apply for mediation services under SMU Pro Bono Centre.
+  
+  By proceeding with this interview, you declare that the particulars in this interview are true and remain unchanged to date. 
+  
+  You will hereby consent to the collection, usage and disclosure of your personal data indicated in this form to be used by SMU Pro Bono Centre.
+buttons:
+  - "I agree": True
+---
+section: Responding Party Details
+question: |
+  Please enter your personal details below.
+fields: 
+  - "Name": secondparty.name
+    required: True
+    default: |
+      ${ showifdef('respondent.party_name') }
+  - "Salutation": secondparty_salutation
+    choices:
+      - Mr
+      - Mrs
+      - Mdm
+      - Miss
+      - Dr
+  - "Are you applying as an individual or a company?": secondparty_individual_or_company
+    input type: radio
+    choices:
+      - "Individual": True
+      - "Company": False
+  - "What is the name of your company?": secondparty_company_name
+    show if:
+      variable: secondparty_individual_or_company
+      is: False
+  - "What is your position in the company?": secondparty_company_appointment
+    show if:
+      variable: secondparty_individual_or_company
+      is: False
+  - "Nationality": secondparty_nationality
+    choices:
+      - Singapore Citizen
+      - Singapore Permanent Resident
+      - Non-Singaporean Citizen
+    default: Singapore Citizen
+    show if:
+      variable: secondparty_individual_or_company
+      is: True
+  - "Mailing Address": secondparty.address.address
+    address autocomplete: True
+  - "Email Address": secondparty_email_address
+    datatype: email
+    default: ${ respondent_email_address }
+  - "Contact Number": secondparty_contact_number
+  - "Gross Monthly Income": secondparty_gross_monthly_income
+    show if:
+      variable: secondparty_individual_or_company
+      is: True
+    datatype: currency
+---
+section: Dispute Details
+question: |
+  Please fill in details of the dispute.
+fields:
+  - "Are you seeking to make a monetary claim from ${ firstparty.name }?": secondparty_monetary_claim_or_not
+    datatype: yesnoradio
+  - "What is the monetary value of the claim?": secondparty_monetary_claim_value
+    datatype: currency
+    show if:
+      variable: secondparty_monetary_claim_or_not
+      is: True
+  - "Type of dispute": secondparty_type_of_dispute
+    choices:
+      - "Personal Injury"
+      - "Defamation"
+      - "Family/Neighbour Disputes"
+      - "Tenancy Disputes"
+      - "Customer & Businesses Disputes"
+      - "Business Partners Disputes"
+      - "Disputes on Campus"
+      - "Others"
+  - "If you filled in **Others** for the type of dispute, please indicate the type of dispute": secondparty_other_types_of_disputes
+    show if:
+      variable: secondparty_type_of_dispute
+      is: Others
+---
+question: |
+    Please fill in details of the dispute.
+fields:
+  - "Have all the parties agreed to mediate this matter?": secondparty_agreement_to_mediate
+    datatype: yesnoradio
+  - "What languages do you prefer to have mediation conducted in?": secondparty_preferred_language
+    choices: 
+      - "English"
+      - "Mandarin"
+      - "Melayu"
+      - "Hindi"
+      - "Tamil"
+    default: "English"
+---
+section: Dispute Details
+question: |
+  Please fill in details of the dispute.
+fields: 
+  - "Briefly describe what happened between you and ${ firstparty.name }": secondparty_brief_description
+    input type: area
+  - "What do you want from ${ firstparty.name }": secondparty_relief_sought
+    input type: area
+  - "Was there any prior negotiation or mediation on the same dispute or related matter in the dispute?": secondparty_any_prior_mediation_or_negotiation
+    datatype: yesnoradio
+    default: |
+      ${ showifdef('firstparty_any_prior_mediation_or_negotiation') }
+  - "Briefly describe what is the outcome of the previous mediation or negotiation?": secondparty_outcome_of_previous_mediation
+    input type: area
+    show if:
+      variable: secondparty_any_prior_mediation_or_negotiation
+      is: True
+    help: |
+      Was there any partial settlement, or no agreement was reached between parties? Were there any offers and proposals made, and why they were not agreed on?
+  - "What are the biggest issues that prevent you and ${ firstparty.name } from settling the dispute?": secondparty_biggest_issues
+    input type: area
+    hint: |
+      Example: ${ firstparty.name } and I cannot agree with each other because we would get angry and irrational.
+---
+event: secondparty_signature_page
+question: |
+  Dear ${ secondparty.name }, please sign your name below.
+signature: secondparty.signature
+under: |
+  ${ secondparty }
+---
+question: |
+  Thank you for completing the interview.
+subquestion: | 
+  Your application form has been generated. Please download your form below and e-mail it to SMU Pro Bono Centre via smupbcmediation@gmail.com.
+event: secondparty_download_screen
+---
